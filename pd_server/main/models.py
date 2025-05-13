@@ -3,7 +3,8 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 
 
 class RecordableModel(models.Model):
-    record_time = models.DateTimeField(auto_now_add=True)
+    record_time = models.DateTimeField(auto_now_add=True, unique=True)
+    record_time_timestamp = models.BigIntegerField(unique=True, primary_key=True)
 
     class Meta:
         abstract = True
@@ -29,6 +30,9 @@ class Computer(models.Model):
     gpu_name = models.CharField(max_length=512, null=True, blank=True)
     gpu_memory = models.CharField(max_length=512, null=True, blank=True)
 
+    def __str__(self):
+        return f'{self.hostname} | {self.ip_address}'
+
 class OS(models.IntegerChoices):
     UNIX = 0, "UNIX"
     LINUX = 1, "Linux"
@@ -50,14 +54,18 @@ class Process(models.Model):
     exe = models.CharField(max_length=255)
 
 class Stat(RecordableModel):
-    computer = models.ForeignKey(Computer, on_delete=models.CASCADE, null=True, blank=True)
     cpu_load = models.FloatField(default=0, help_text="Load in percents")
     ram_load = models.FloatField(default=0, help_text="Load in bytes")
     network_load = models.FloatField(default=0, help_text="Load in bytes")
     gpu_load = models.FloatField(default=0, help_text="Load in bytes", null=True, blank=True)
 
-class ProcessStat(RecordableModel):
-    stat = models.OneToOneField(Stat, on_delete=models.CASCADE, null=True, blank=True)
+    class Meta:
+        abstract = True
+
+class ComputerStat(Stat):
+    computer = models.ForeignKey(Computer, on_delete=models.CASCADE, null=True, blank=True)
+
+class ProcessStat(Stat):
     pid = models.IntegerField()
     exe = models.CharField(max_length=512, null=True, blank=True)
     name = models.CharField(max_length=512, null=True, blank=True)
